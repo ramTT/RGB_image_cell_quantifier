@@ -1,0 +1,57 @@
+/////////////////Introduction & file selection/////////////////
+selectWindow("Log");
+run("Close");
+showMessageWithCancel("The macro requires a stack a multichannel stack. Press 'OK' to select.");
+
+path = File.openDialog("Select file");
+open(path);
+
+showMessageWithCancel("Press 'OK' to initiate the quantification. Press 'Cancel' to abort.");
+
+start_time = getTime();
+
+/////////////////Channel split & thresholding/////////////////
+title= getTitle();
+run("Split Channels");
+
+selectWindow(title+" (red)");
+close();
+selectWindow(title+" (blue)");
+close();
+
+selectWindow(title+" (green)");
+run("Auto Threshold...", "method=Triangle white stack");
+run("Make Binary", " ");
+
+/////////////////Cell counting/////////////////
+for (i=1; i<=nSlices; i++){
+	setSlice(i);
+	run("Analyze Particles...", "size=500-Infinity circularity=0.20-1.00 show=[Overlay] [add to manager] summarize");
+}
+
+run("Analyze Particles...", "size=500-Infinity circularity=0.20-1.00 show=[Overlay] stack ");
+
+run("To ROI Manager");
+open(path);
+selectWindow(title);
+run("From ROI Manager");
+
+/////////////////Closing windows/////////////////
+selectWindow(title+" (green)");
+close();
+selectWindow("ROI Manager");
+run("Close");
+
+showMessage("Cell quantification complete!\nRun time: " + toString((getTime()-start_time)/1000)+" seconds");
+
+/////////////////Saving output /////////////////
+if (getBoolean(" Do you want to save the binary stack?")==1){	
+	saveAs("tiff");
+}
+
+if (getBoolean("Do you want to save the summary table before exiting?")){
+	selectWindow("Summary of "+title+" (green)");
+	saveAs("results");
+}
+
+showMessage("Please make sure to verify the quantification before usage! Press 'OK' to exit macro");
